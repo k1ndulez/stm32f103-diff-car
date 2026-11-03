@@ -34,3 +34,13 @@ CMakeLists.txt.bak
 
 # draw.io backup files
 *.drawio.bak*
+
+# 与固件无关的杂项：机械图纸、课程资料、临时脚本（约 19 MB）
+_杂项/
+
+# Python
+__pycache__/
+*.pyc
+
+# 临时脚本
+_tmp_*

@@ -1,0 +1,131 @@
+<mxfile host="app.diagrams.net" agent="DSH" version="24.7.17" type="device">
+  <diagram id="pad-to-car" name="手柄到小车-数据路径">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="手柄 → 电脑 → 蓝牙 → 小车：数据路径" style="text;html=1;fontSize=20;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="160" y="0" width="520" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n1" value="手柄&lt;br&gt;（2.4G 私有协议无线）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="40" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n2" value="USB 接收器（HID）&lt;br&gt;VID_4131 &amp;amp; PID_3519" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="126" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n3" value="① 读手柄 XInput&lt;br&gt;XInput1_4.dll · slot 0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="212" width="260" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n4" value="② 死区 + 差速混控&lt;br&gt;左摇杆=转向 / RT·LT=油门" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="288" width="260" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n5" value="③ 组帧（5 字节）&lt;br&gt;0xAA 02 L R SUM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="364" width="260" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n6" value="④ sp.write()&lt;br&gt;pyserial → WriteFile" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="440" width="260" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n7" value="COM5 虚拟串口&lt;br&gt;CreateFile(&quot;\\.\COM5&quot;) → 驱动 TX 缓冲" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="522" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n8" value="蓝牙 RFCOMM 无线&lt;br&gt;Windows 蓝牙栈发出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="608" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n9" value="HC-05 模块&lt;br&gt;TXD 按 115200 逐位吐出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="694" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n10" value="STM32 PB11（USART3_RX）&lt;br&gt;115200 8N1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="780" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n11" value="中断收字节 → 环形缓冲&lt;br&gt;找帧头 / 验校验和" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="866" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n12" value="g_rpm_l / g_rpm_r → PID ×2&lt;br&gt;motor_set(duty_l, duty_r)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="160" y="952" width="260" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r1" value="STM32 PB10（USART3_TX）&lt;br&gt;每 20ms 发遥测文本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="780" width="230" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r2" value="PC 端接收遥测&lt;br&gt;（暂未实现）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#999999;fontSize=12;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="440" width="230" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="2.4G" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n1" target="n2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="USB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n2" target="n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n3" target="n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="LX / RT / LT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n4" target="n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="L, R（-100~100）" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n5" target="n6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="AA 02 64 21 85" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n6" target="n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="8N1 / 115200" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n7" target="n8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="无线" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n8" target="n9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="TXD → PB11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n9" target="n10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n10" target="n11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n11" target="n12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e12" value="反向：全双工独立通道" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;dashed=1;strokeColor=#82b366;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="r1" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="PB10 → HC-05 RXD" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;dashed=1;strokeColor=#82b366;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="n10" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lg1" value="图例" style="text;html=1;fontSize=14;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="800" y="40" width="120" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="lg2" value="已验证可用" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="800" y="70" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lg3" value="PC 端软件（已验证）" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="800" y="108" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lg4" value="待硬件到位（今晚）" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="800" y="146" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lg5" value="STM32 端未实现" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="800" y="184" width="150" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="关键数字&lt;br&gt;· 帧长 5 字节，50 Hz → 250 B/s&lt;br&gt;· 波特率 115200（HC-05 出厂 9600，必须改）&lt;br&gt;· 单程延迟约 30~60 ms&lt;br&gt;· write() 返回 ≠ 已送达，车端要 300 ms 超时停车" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="800" y="680" width="300" height="120" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

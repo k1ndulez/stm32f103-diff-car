@@ -1,0 +1,91 @@
+<mxfile host="65bd71144e">
+    <diagram id="pad-to-car-simple" name="手柄控制小车-简版">
+        <mxGraphModel dx="1426" dy="899" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="950" pageHeight="880" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" parent="1" style="text;html=1;fontSize=22;fontStyle=1;align=left;verticalAlign=middle;" value="手柄怎么把车开动：一条信息走的路" vertex="1">
+                    <mxGeometry height="34" width="560" x="180" y="10" as="geometry"/>
+                </mxCell>
+                <mxCell id="b1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="① 手柄（你手里的遥控器）&lt;br&gt;&lt;br&gt;推摇杆 = 控制往哪边走&lt;br&gt;按扳机 = 控制多快" vertex="1">
+                    <mxGeometry height="76" width="340" x="180" y="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="b2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="② 插在电脑上的接收器&lt;br&gt;&amp;nbsp;USB&lt;div&gt;把遥控器的无线电&lt;/div&gt;" vertex="1">
+                    <mxGeometry height="76" width="340" x="180" y="162" as="geometry"/>
+                </mxCell>
+                <mxCell id="b3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" value="③ 电脑里的控制程序&lt;br&gt;&lt;br&gt;一看：摇杆推到了哪里&lt;br&gt;二算：左轮、右轮各转多快&lt;br&gt;三装：塞进一个小包裹" vertex="1">
+                    <mxGeometry height="96" width="340" x="180" y="268" as="geometry"/>
+                </mxCell>
+                <mxCell id="b4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="④ 电脑里的「虚拟串口」&lt;br&gt;&lt;br&gt;电脑假装这里插着一根线&lt;br&gt;程序把包裹丢进这根线里就行" vertex="1">
+                    <mxGeometry height="76" width="340" x="180" y="394" as="geometry"/>
+                </mxCell>
+                <mxCell id="b5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="⑤ 蓝牙：其实没有线&lt;br&gt;&lt;br&gt;包裹变成电波，飞过去" vertex="1">
+                    <mxGeometry height="66" width="340" x="180" y="500" as="geometry"/>
+                </mxCell>
+                <mxCell id="b6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" value="⑥ 车上的蓝牙模块&lt;br&gt;&lt;br&gt;收下电波，还原成包裹&lt;br&gt;再从一个小引脚送出去" vertex="1">
+                    <mxGeometry height="76" width="340" x="180" y="596" as="geometry"/>
+                </mxCell>
+                <mxCell id="b7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" value="⑦ 单片机（车的大脑）&lt;br&gt;&lt;br&gt;拆开包裹，读出左右轮的速度&lt;br&gt;再命令电机照这个转" vertex="1">
+                    <mxGeometry height="76" width="340" x="180" y="702" as="geometry"/>
+                </mxCell>
+                <mxCell id="b8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=14;" value="⑧ 电机转 → 车动了&lt;br&gt;（电机本身没问题，要等 ⑦ 通了才会动）" vertex="1">
+                    <mxGeometry height="56" width="340" x="180" y="808" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1" parent="1" style="text;html=1;fontSize=15;fontStyle=1;align=left;" value="「包裹」里就 5 个数字" vertex="1">
+                    <mxGeometry height="26" width="330" x="580" y="268" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1b" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=13;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" value="1. 开头标记   AA      ← 认得出这是个包裹&lt;br&gt;2. 后面有几个数  2&lt;br&gt;3. 左轮速度   -100 ~ 100&lt;br&gt;4. 右轮速度   -100 ~ 100&lt;br&gt;5. 核对数字            ← 路上坏了就丢掉" vertex="1">
+                    <mxGeometry height="130" width="330" x="580" y="298" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2" parent="1" style="text;html=1;fontSize=15;fontStyle=1;align=left;fontColor=#B85450;" value="现在卡在哪" vertex="1">
+                    <mxGeometry height="26" width="330" x="580" y="460" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2b" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" value="单片机那头还没开「收件口」&lt;br&gt;&lt;br&gt;包裹能送到门口，但没人接&lt;br&gt;所以手柄动了，车不会动" vertex="1">
+                    <mxGeometry height="96" width="330" x="580" y="490" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" parent="1" style="text;html=1;fontSize=15;fontStyle=1;align=left;" value="三个必须对上的数" vertex="1">
+                    <mxGeometry height="26" width="330" x="580" y="616" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3b" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=13;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" value="· 每 20 毫秒发一个（每秒 50 个）&lt;br&gt;· 两边的「说话速度」都要 115200&lt;br&gt;· 包裹永远是 5 个数字&lt;br&gt;&lt;br&gt;任何一条对不上，车就不动或乱动" vertex="1">
+                    <mxGeometry height="120" width="330" x="580" y="646" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg" parent="1" style="text;html=1;fontSize=15;fontStyle=1;align=left;" value="颜色说明" vertex="1">
+                    <mxGeometry height="26" width="200" x="580" y="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="已经能跑通" vertex="1">
+                    <mxGeometry height="32" width="180" x="580" y="86" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" value="电脑里的程序（已验证）" vertex="1">
+                    <mxGeometry height="32" width="180" x="580" y="124" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" value="等蓝牙模块到货" vertex="1">
+                    <mxGeometry height="32" width="180" x="580" y="162" as="geometry"/>
+                </mxCell>
+                <mxCell id="lg4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="还没写" vertex="1">
+                    <mxGeometry height="32" width="180" x="580" y="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" edge="1" parent="1" source="b1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="b2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" edge="1" parent="1" source="b2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="b3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" edge="1" parent="1" source="b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="b4">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" edge="1" parent="1" source="b4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="b5" value="丢进线里">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" edge="1" parent="1" source="b5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="b6" value="电波">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" edge="1" parent="1" source="b6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="b7" value="一根细线">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" edge="1" parent="1" source="b7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="b8" value="命令">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

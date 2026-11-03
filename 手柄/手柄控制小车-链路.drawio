@@ -1,0 +1,105 @@
+<mxfile host="app.diagrams.net" agent="DSH" version="24.7.17" type="device">
+  <diagram id="pad-to-car-mid" name="手柄控制小车-链路">
+    <mxGraphModel dx="900" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="手柄 → PC → 蓝牙 → 小车：指令链路" style="text;html=1;fontSize=20;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="170" y="10" width="560" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b1" value="① 手柄（2.4G，XInput 协议）&lt;br&gt;左摇杆 X → 转向　RT → 前进　LT → 后退" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="52" width="360" height="86" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b2" value="② USB 接收器（HID 游戏控制器）&lt;br&gt;2.4G 私有协议转 USB，由 XInput 接口提供状态查询" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="164" width="360" height="76" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b3" value="③ PC 端程序&lt;br&gt;读摇杆量 → 死区处理 → 差速混控&lt;br&gt;输出左右轮速度指令（−100 ~ +100 %）并组帧" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="266" width="360" height="96" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b4" value="④ 虚拟串口（蓝牙 SPP 通道）&lt;br&gt;HC-05 与 PC 配对后，Windows 生成一个 COM 口&lt;br&gt;按 8N1 / 115200 写入字节流" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="388" width="360" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b5" value="⑤ 蓝牙 RFCOMM 无线链路&lt;br&gt;替代物理连线，单程延迟约 30 ~ 60 ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="504" width="360" height="76" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b6" value="⑥ 车端蓝牙模块（HC-05）&lt;br&gt;串口透传，TXD 引脚按 115200 输出原始字节" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="606" width="360" height="76" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b7" value="⑦ STM32 接收与解析&lt;br&gt;USART3_RX（PB11）中断接收 → 帧同步 → 校验&lt;br&gt;解出左右目标转速；300 ms 无帧则归零" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="708" width="360" height="96" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b8" value="⑧ PID + 电机驱动&lt;br&gt;左右轮各一路闭环，输出 PWM 占空比（±7200）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="830" width="360" height="76" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1" value="指令帧格式（5 字节定长）" style="text;html=1;fontSize=15;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="610" y="266" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="s1b" value="0xAA　0x02　L　R　SUM&lt;br&gt;帧头　长度　左轮　右轮　校验和&lt;br&gt;&lt;br&gt;L / R 为 int8，单位 %（−100 ~ +100）&lt;br&gt;SUM = (L + R) &amp;amp; 0xFF，校验错则整帧丢弃" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=13;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="610" y="296" width="340" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2" value="当前缺口" style="text;html=1;fontSize=15;fontStyle=1;align=left;fontColor=#B85450;" vertex="1" parent="1">
+          <mxGeometry x="610" y="466" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="s2b" value="USART3 只初始化了发送，未开启接收&lt;br&gt;未调用 HAL_UART_Receive_IT&lt;br&gt;&lt;br&gt;字节能到达 PB11，但无人读取，接收寄存器溢出丢弃" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="610" y="496" width="340" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3" value="参数约束" style="text;html=1;fontSize=15;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="610" y="636" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="s3b" value="· 波特率 115200，8N1，无流控&lt;br&gt;· 帧率 50 Hz → 250 B/s，带宽占用可忽略&lt;br&gt;· HC-05 出厂默认 9600，需 AT 指令改为 115200&lt;br&gt;· TX（PB10）与 RX（PB11）独立，全双工互不干扰" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=13;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="610" y="666" width="340" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lg" value="状态" style="text;html=1;fontSize=15;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="610" y="52" width="200" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="lg1" value="已验证" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="610" y="82" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lg2" value="PC 端已实现" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="610" y="118" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lg3" value="待硬件到位" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="610" y="154" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lg4" value="未实现" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="610" y="190" width="160" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b1" target="b2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="USB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b2" target="b3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="5 字节帧" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b3" target="b4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="COM 写" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b4" target="b5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="RFCOMM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b5" target="b6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="TXD → PB11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b6" target="b7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="目标转速" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b7" target="b8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

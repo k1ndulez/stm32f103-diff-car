@@ -53,6 +53,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/font.c
     User/menu.c
     User/pid.c
+    User/bt_ctrl.c
 )
 
 # Add include paths

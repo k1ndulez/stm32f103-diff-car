@@ -4,6 +4,7 @@
 #include<stdint.h>
 
 void encoder_init(void);
-float encoder_rpm(void);
+float encoder_rpm_left(void);
+float encoder_rpm_right(void);
 
 #endif

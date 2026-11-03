@@ -45,13 +45,13 @@ float pid_calc(pid_t *p, float target, float meas)
     if (p->iout < p->iout_min) p->iout = p->iout_min;
     if (p->iout > p->iout_max) p->iout = p->iout_max;
 
-    /* 首拍没有“上一次误差”，把差值当 0，避免 D 项冲击 */
+    /* 首拍避免 D 项冲击 */
     float diff = p->error[0] - p->error[1];
 
     if (p->ready == 0) 
     {
-    diff   = 0.0f;
-    p->ready = 1;
+        diff   = 0.0f;
+        p->ready = 1;
     }
 
     p->dout = p->kd * diff; 
@@ -70,5 +70,9 @@ void pid_reset(pid_t *p)
     p->pout     = 0.0f;
     p->dout     = 0.0f;
     p->out      = 0.0f;
+    
+    p->set = 0.0f;
+    p->fdb = 0.0f;
+
     p->ready    = 0;
 }

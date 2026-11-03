@@ -2,6 +2,7 @@
 #include "key.h"
 #include "oled.h"
 #include "font.h"
+#include "bt_ctrl.h"
 #include <stdio.h>
 
 typedef enum
@@ -15,10 +16,10 @@ static page_t  s_page   = PAGE_MAIN;//当前页
 static uint8_t s_cursor = 0;//光标位置
 static uint8_t s_edit = 0;          /* 0 = 浏览，1 = 编辑中 */
 static float   s_edit_val = 0.0f;   /* 临时值 */
-static float s_params[4] = { 0.0f, 0.0f, 0.0f, 0.0f };  /* Kp Ki Kd Filter */
-static int s_rpm_show = 0;          /* 实测转速（以后由速度环更新） */
-static int s_rpm_cmd  = 0;          /* AUTO 目标转速，可编辑，步长 50 */
-static const float k_step[5] = { 50.0f, 0.1f, 0.01f, 0.001f, 1.0f };/*分度值*/
+float g_params[4] = { 3.0f, 0.8f, 0.03f, 0.0f };  /* Kp Ki Kd Filter */
+int s_rpm_show = 0;          /* 实测转速（以后由速度环更新） */
+int g_rpm_cmd  = 0;          /* AUTO 目标转速，可编辑，步长 5 */
+static const float k_step[5] = { 5.0f, 0.1f, 0.01f, 0.001f, 1.0f };/*分度值*/
 static const float k_min[5]  = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 static const float k_max[5]  = { 300.0f, 100.0f, 10.0f, 1.0f, 10.0f };
 
@@ -46,7 +47,12 @@ void draw_bt_control(void)
     static const char *items[5] = { "RPM", "P", "I", "D", "FILTER" };
 
     /* 标题 8 px，正文 12 px 行距 11：5 行正好占满 64 px */
-    OLED_PrintASCIIString(0, 0, "BT_CTRL", &afont8x6, OLED_COLOR_NORMAL);
+    char head[24];
+    sprintf(head, "BT %s L%4d R%4d",
+        bt_link_ok() ? "OK" : "--",
+        bt_get_left_rpm(),
+        bt_get_right_rpm());
+    OLED_PrintASCIIString(0, 0, head, &afont8x6, OLED_COLOR_NORMAL);
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -61,7 +67,7 @@ void draw_bt_control(void)
         }
         else
         {
-            float val = (s_edit && i == s_cursor) ? s_edit_val : s_params[i - 1];
+            float val = (s_edit && i == s_cursor) ? s_edit_val : g_params[i - 1];
             int v = (int)(val * 1000.0f + 0.5f);
             sprintf(line, "%s%s: %d.%03d%s", sel, items[i], v / 1000, v % 1000, mark);
         }
@@ -87,12 +93,12 @@ void draw_auto(void)
         if (i == 0)
         {
             /* 编辑时显示临时值，平时显示目标转速 */
-            int rpm = (s_edit && i == s_cursor) ? (int)(s_edit_val + 0.5f) : s_rpm_cmd;
+            int rpm = (s_edit && i == s_cursor) ? (int)(s_edit_val + 0.5f) : g_rpm_cmd;
             sprintf(line, "%sRPM: %4d%s", sel, rpm, mark);
         }
         else
         {
-            float val = (s_edit && i == s_cursor) ? s_edit_val : s_params[i - 1];
+            float val = (s_edit && i == s_cursor) ? s_edit_val : g_params[i - 1];
             int v = (int)(val * 1000.0f + 0.5f);
             sprintf(line, "%s%s: %d.%03d%s", sel, items[i], v / 1000, v % 1000, mark);
         }
@@ -148,8 +154,8 @@ void handle_auto(key_event_t e)
         case KEY_RIGHT:     s_cursor= (s_cursor+ 1)% 5; break;
         case KEY_LEFT:      s_cursor= (s_cursor+ 4)% 5; break;
         case KEY_OK:        s_edit = 1;
-                            s_edit_val = (s_cursor == 0) ? (float)s_rpm_cmd
-                                                         : s_params[s_cursor - 1];
+                            s_edit_val = (s_cursor == 0) ? (float)g_rpm_cmd
+                                                         : g_params[s_cursor - 1];
                             break;
         case KEY_BACK:      s_cursor = 0;
                             s_page = PAGE_MAIN;         break;              
@@ -166,7 +172,7 @@ void handle_btctrl(key_event_t e)
         case KEY_OK:        if (s_cursor >= 1)
                             {
                                 s_edit = 1;
-                                s_edit_val = s_params[s_cursor - 1];
+                                s_edit_val = g_params[s_cursor - 1];
                             }
                             break;
         case KEY_BACK:      s_cursor = 0;
@@ -188,8 +194,8 @@ void menu_handle(key_event_t e)//菜单页面跳转
             case KEY_LEFT:  s_edit_val -= step; break;
             case KEY_RIGHT: s_edit_val += step; break;
             case KEY_OK:
-                if (s_cursor == 0) s_rpm_cmd = (int)(s_edit_val + 0.5f);
-                else               s_params[s_cursor - 1] = s_edit_val;
+                if (s_cursor == 0) g_rpm_cmd = (int)(s_edit_val + 0.5f);
+                else               g_params[s_cursor - 1] = s_edit_val;
                 s_edit = 0;
                 break;
             case KEY_BACK:  s_edit = 0; break;
@@ -212,5 +218,8 @@ void menu_handle(key_event_t e)//菜单页面跳转
     menu_draw();
 }
 
-
+void menu_refresh(void)
+{
+    menu_draw();
+}
 
