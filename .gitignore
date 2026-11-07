@@ -53,3 +53,8 @@ _tmp_*
 apex_*.png
 _apex_watch.log
 _desktop_backup/
+
+# Keil 每次编译重新生成的链接/列表文件
+*.sct
+*.lst
+*.map
