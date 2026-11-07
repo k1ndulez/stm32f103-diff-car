@@ -5,6 +5,10 @@
 #include "bt_ctrl.h"
 #include <stdio.h>
 
+extern uint8_t g_imu_status;
+extern float g_imu_yaw;
+extern float g_imu_yaw_dps;
+
 typedef enum
 {
     PAGE_MAIN = 0,
@@ -39,6 +43,9 @@ void draw_main(void)//主菜单完成图像绘制
         OLED_PrintASCIIString(0, 16 + i * 16, line, &afont16x8, OLED_COLOR_NORMAL);
 
     }
+    char imu_line[24];
+    sprintf(imu_line, "YAW:%4d W:%4d", (int)g_imu_yaw, (int)g_imu_yaw_dps);
+    OLED_PrintASCIIString(0, 48, imu_line, &afont12x6, OLED_COLOR_NORMAL);
     
 }
 

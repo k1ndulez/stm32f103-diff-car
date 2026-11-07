@@ -54,6 +54,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/menu.c
     User/pid.c
     User/bt_ctrl.c
+    User/sync.c
+    User/imu.c 
+    User/cmd.c
 )
 
 # Add include paths

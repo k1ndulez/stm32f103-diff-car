@@ -34,6 +34,10 @@
 #include "encoder.h" 
 #include "pid.h"
 #include "bt_ctrl.h"
+#include "sync.h"
+#include "imu.h"
+uint8_t g_imu_status; 
+int16_t g_imu_gz = 0;      /* 陀螺 Z 轴原始值，给 OLED 显示 */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -158,11 +162,13 @@ void StartDefaultTask(void *argument)
 
     bt_tick(HAL_GetTick());
 
-    float target_l = (float)bt_get_left_rpm();
-    float target_r = (float)bt_get_right_rpm();
+    float tl = (float)bt_get_left_rpm();
+    float tr = (float)bt_get_right_rpm();
     float meas_l = encoder_rpm_left();
     float meas_r = encoder_rpm_right();
 
+    float target_l, target_r;
+    sync_correct(tl, tr, meas_l, meas_r, &target_l, &target_r);
     float duty_l = pid_calc(&pid_l, target_l, meas_l);
     float duty_r = pid_calc(&pid_r, target_r, meas_r);
 
@@ -178,11 +184,12 @@ void StartDefaultTask(void *argument)
     if (++telem_div >= 10)          /* 20 ms × 10 = 200 ms，给 21 ms 的传输留足时间 */
     {
       telem_div = 0;
-      int n = snprintf(telem_buf, sizeof(telem_buf), "%d %d %d %d\n",
+      int n = snprintf(telem_buf, sizeof(telem_buf), "%d %d %d %d %d\n",
                        (int)(target_l * 10.0f),
                        (int)(target_r * 10.0f),
                        (int)(meas_l * 10.0f),
-                       (int)(meas_r * 10.0f));
+                       (int)(meas_r * 10.0f),
+                       (int)g_imu_yaw);          /* 真实航向角（-180~180） */
 
       /* 用阻塞发送：5 Hz 下每 200 ms 才卡 21 ms，没必要上 DMA。
          注意：本工程的 .ioc 里已经没有 USART3 的 DMA 配置，
@@ -210,10 +217,29 @@ void StartTask02(void *argument)
   osDelay(50);            /* 等 OLED 上电稳定 */
   OLED_Init();
   menu_init();  
+  g_imu_status = imu_init();
+    if (g_imu_status == 0x00)
+  {
+    if (imu_calibrate() != 0)
+    g_imu_status = 0xFB;
+  }
   static uint32_t last_ui = 0;
+
+  static uint32_t  s_imu_tick = 0;
+
+  s_imu_tick = HAL_GetTick();
   /* Infinite loop */
   for(;;)
   {
+    uint32_t now = HAL_GetTick();
+      
+    if (now - s_imu_tick >= 20)
+    {
+      uint16_t dt = (uint16_t)(now - s_imu_tick);
+      s_imu_tick = now;
+      imu_update(dt);
+    }
+    
     key_event_t e = key_scan();
     if (e != KEY_NONE)
     {

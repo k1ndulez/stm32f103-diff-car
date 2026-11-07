@@ -14,6 +14,7 @@
   *   一旦发现不对立刻复位，能自己重新对齐。
   ******************************************************************************
   */
+#include "cmd.h"
 #include "bt_ctrl.h"
 
 /* ---------------------------------------------------------------- 状态 --- */
@@ -21,7 +22,8 @@ typedef enum
 {
     BT_MODE_UNKNOWN = 0,    /* 还没决定这一条是二进制还是文本 */
     BT_MODE_BIN,            /* 正在收 0xAA 二进制帧 */
-    BT_MODE_TXT             /* 正在收文本行 */
+    BT_MODE_TXT,             /* 正在收文本行 */
+    BT_MODE_CMD 
 } bt_mode_t;
 
 static bt_mode_t s_mode;
@@ -38,6 +40,9 @@ static uint32_t s_last_frame_ms;
 static uint8_t  s_link_ok;
 static uint32_t s_frames;
 static uint32_t s_errors;
+
+static char    s_cmd[CMD_MAX_LEN];
+static uint8_t s_clen;//游标
 
 /* -------------------------------------------------------------- 小工具 --- */
 /* 把一个 0~255 的字节还原成 -128~127 的有符号数（补码） */
@@ -218,6 +223,43 @@ static void feed_binary(uint8_t byte, uint32_t now_ms)
     s_mode = BT_MODE_UNKNOWN;
 }
 
+static void feed_cmd(uint8_t byte, uint32_t now_ms)
+{
+    /* 行尾：一行收完，去解析 */
+    if (byte == '\n' || byte == '\r')
+    {
+        if (s_clen > 0u)
+        {
+            cmd_result_t r;
+            s_cmd[s_clen] = '\0';
+            if (cmd_parse(s_cmd, &r) && r.valid)
+                apply_targets(r.left_pct, r.right_pct, now_ms);
+            else
+                s_errors++;
+        }
+        s_clen = 0u;
+        s_mode = BT_MODE_UNKNOWN;
+        return;
+    }
+
+    /* 行内空格忽略 */
+    if (byte == ' ' || byte == '\t') return;
+
+    /* 攒字符 */
+    if (s_clen < (CMD_MAX_LEN - 1u))
+    {
+        s_cmd[s_clen] = (char)byte;
+        s_clen++;
+    }
+    else
+    {
+        /* 太长，整行作废 */
+        s_clen = 0u;
+        s_mode = BT_MODE_UNKNOWN;
+        s_errors++;
+    }
+}
+
 /* ---------------------------------------------------------------- 对外 --- */
 void bt_init(void)
 {
@@ -230,6 +272,7 @@ void bt_init(void)
     s_link_ok       = 0u;
     s_frames        = 0u;
     s_errors        = 0u;
+    s_clen          = 0u;
 }
 
 void bt_feed(uint8_t byte, uint32_t now_ms)
@@ -256,6 +299,13 @@ void bt_feed(uint8_t byte, uint32_t now_ms)
             s_tlen = 0u;
             /* 不 return，直接落到下面按文本处理 */
         }
+        else if (byte == 'F' || byte == 'f' || byte == 'B' || byte == 'b' ||
+                 byte == 'L' || byte == 'l' || byte == 'R' || byte == 'r' ||
+                 byte == 'S' || byte == 's')
+        {
+            s_mode = BT_MODE_CMD;
+            s_clen = 0u;
+        }
         else
         {
             return;             /* 杂散字节，丢弃 */
@@ -269,6 +319,10 @@ void bt_feed(uint8_t byte, uint32_t now_ms)
     else if (s_mode == BT_MODE_BIN)
     {
         feed_binary(byte, now_ms);
+    }
+    else if (s_mode == BT_MODE_CMD)
+    {
+    feed_cmd(byte, now_ms);
     }
 }
 
