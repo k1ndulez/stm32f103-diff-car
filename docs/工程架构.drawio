@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" agent="DSH" version="24.7.17" type="device">
+  <diagram id="arch" name="工程架构">
+    <mxGraphModel dx="900" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="960" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="xunji-car 工程架构" style="text;html=1;fontSize=20;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="170" y="8" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n1" value="外部输入&lt;br&gt;手机 App（F/B/L/R/S）　PC 手柄　PC 网页" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="52" width="400" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n2" value="JDY-31 蓝牙模块　USART3（PB10/PB11）9600 8N1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="150" width="400" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="242" width="400" height="146" as="geometry" />
+        </mxCell>
+        <mxCell id="n3t" value="bt_ctrl.c　逐字节状态机（按首字节分流）" style="text;html=1;fontSize=13;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="152" y="248" width="380" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="n3a" value="0xAA&lt;br&gt;二进制帧" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="154" y="312" width="112" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="n3b" value="数字 / -&lt;br&gt;&quot;100,33&quot;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="284" y="312" width="112" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="n3c" value="字母&lt;br&gt;&quot;F80&quot; → cmd.c" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="414" y="312" width="112" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n4" value="sync.c　交叉耦合补偿（左右轮同步）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="406" width="400" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n5" value="pid.c　速度环 ×2（左 / 右）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="498" width="400" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n6" value="motor.c　PWM 输出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="590" width="400" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n7" value="电机 ×2（TB6612 驱动）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="682" width="400" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="n8" value="encoder.c　编码器测速（TIM1 / TIM4）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="774" width="400" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r1" value="MPU6050　I2C1 0x68（PB8/PB9，与 OLED 共总线）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="242" width="300" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="imu.c　姿态解算（陀螺积分 + 编码器融合）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="334" width="300" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="key.c　按键扫描" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="498" width="300" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" value="menu.c　+　oled.c / font.c　显示" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="590" width="300" height="54" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t1" value="StartDefaultTask&lt;br&gt;20 ms" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="16" y="406" width="110" height="146" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" value="StartTask02　10 ms" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="620" y="440" width="300" height="34" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n1" target="n2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="字节流" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n2" target="n3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="目标转速 tl / tr" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n3" target="n4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="修正后目标" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n4" target="n5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="duty" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n5" target="n6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n6" target="n7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="n7" target="n8"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="fb" value="闭环反馈：encoder.c 实测转速 → pid.c 速度环　　　　遥测：控制任务 → USART3 → 蓝牙 → 手机（5 Hz）" style="text;html=1;fontSize=12;align=left;fontColor=#B85450;" vertex="1" parent="1">
+          <mxGeometry x="140" y="852" width="620" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="r1" target="r2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="r3" target="r4"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="note" value="文件分布&lt;br&gt;User/ 自研：bt_ctrl  cmd  sync  pid  motor  encoder  imu  menu  key  oled  font&lt;br&gt;Core/ CubeMX 生成：时钟 GPIO USART3 I2C1 TIM&lt;br&gt;Drivers/ Middlewares/ 第三方（HAL + FreeRTOS）" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="620" y="72" width="300" height="96" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

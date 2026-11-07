@@ -1,0 +1,88 @@
+<mxfile host="app.diagrams.net" agent="DSH" version="24.7.17" type="device">
+  <diagram id="cmd-parse" name="命令行解析">
+    <mxGraphModel dx="900" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="手机命令 F/B/L/R/S 的解析流程" style="text;html=1;fontSize=20;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="220" y="10" width="520" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b1" value="&lt;b&gt;cmd_parse(&quot;F80&quot;)&lt;/b&gt;&lt;br&gt;调用者：bt_ctrl 收到换行后调用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="250" y="50" width="380" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b2" value="① 跳过前导空格&lt;br&gt;while (*line == ' ' || *line == '\\t') line++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="250" y="140" width="380" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b3" value="② 取首字母 c = *line&lt;br&gt;p = line + 1　（p 准备去读速度）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="250" y="226" width="380" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d1" value="c 是空字符？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="340" y="312" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b4" value="③ 读后面的数字：parse_uint(&amp;p, &amp;tmp)&lt;br&gt;读到了就用它，没读到就保持默认 v = 100" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="250" y="412" width="380" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b5" value="④ 限幅：v 限制在 0 ~ 100&lt;br&gt;（手机发 F999 也不会超）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="250" y="502" width="380" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b6" value="⑤ switch (c)　按首字母决定左右轮" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="588" width="380" height="46" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f1" value="F 前进&lt;br&gt;L +v&lt;br&gt;R +v" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="680" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" value="B 后退&lt;br&gt;L −v&lt;br&gt;R −v" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="180" y="680" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" value="L 左转&lt;br&gt;L −v&lt;br&gt;R +v" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="320" y="680" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" value="R 右转&lt;br&gt;L +v&lt;br&gt;R −v" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="460" y="680" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" value="S 停&lt;br&gt;L 0&lt;br&gt;R 0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="600" y="680" width="120" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="fx" value="其他字母&lt;br&gt;return 0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="740" y="680" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b7" value="⑥ 写 out-&gt;left_pct / right_pct，valid = 1，return 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="250" y="790" width="380" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b8" value="回到 bt_ctrl：apply_targets(left_pct, right_pct)&lt;br&gt;× BT_RPM_MAX / 100 → 目标转速（rpm）→ PID" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="250" y="878" width="380" height="66" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="三种输入共存&lt;br&gt;首字节 0xAA　→ 二进制帧&lt;br&gt;首字节 数字/-　→ 文本 &quot;100,33&quot;&lt;br&gt;首字节 字母　→ 命令行 &quot;F80&quot;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=12;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="680" y="140" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b1" target="b2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b2" target="b3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b3" target="d1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="否" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="d1" target="b4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="是 → return 0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=12;strokeColor=#b85450;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="d1" target="fx"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b4" target="b5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b5" target="b6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.1;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b6" target="f1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.3;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b6" target="f2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b6" target="f3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.7;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b6" target="f4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.9;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b6" target="f5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="f3" target="b7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b7" target="b8"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
