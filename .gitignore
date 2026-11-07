@@ -44,3 +44,12 @@ __pycache__/
 
 # 临时脚本
 _tmp_*
+
+# 个人文件（简历 / 职业规划材料，不随仓库分发）
+2026110036_*
+生涯发展报告-*.pdf
+
+# 桌面截图与调试临时文件
+apex_*.png
+_apex_watch.log
+_desktop_backup/
