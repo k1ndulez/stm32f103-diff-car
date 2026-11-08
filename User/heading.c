@@ -44,7 +44,6 @@ else
     s_left_rpm = 0;
     s_right_rpm = 0;
 }
-
 }
 
 void heading_update(float yaw_deg, float yaw_rate_dps, uint32_t now_ms)
@@ -75,18 +74,18 @@ void heading_update(float yaw_deg, float yaw_rate_dps, uint32_t now_ms)
         }
     }
 
-u = HEADING_KP*err - HEADING_KD*rate;
+    u = HEADING_KP*err - HEADING_KD*rate;
 
-if (u >  HEADING_MAX_RPM) u =  HEADING_MAX_RPM;
-if (u < -HEADING_MAX_RPM) u = -HEADING_MAX_RPM;
+    if (u >  HEADING_MAX_RPM) u =  HEADING_MAX_RPM;
+    if (u < -HEADING_MAX_RPM) u = -HEADING_MAX_RPM;
 
-if (u > 0.0f && u < HEADING_MIN_RPM)  u =  HEADING_MIN_RPM;
-if (u < 0.0f && u > -HEADING_MIN_RPM) u = -HEADING_MIN_RPM;//输出转向速度限幅
+    if (u > 0.0f && u < HEADING_MIN_RPM)  u =  HEADING_MIN_RPM;
+    if (u < 0.0f && u > -HEADING_MIN_RPM) u = -HEADING_MIN_RPM;//输出转向速度限幅
 
-u *= HEADING_OUTPUT_SIGN;
+    u *= HEADING_OUTPUT_SIGN;
 
-s_left_rpm  = (int16_t)(-u);
-s_right_rpm = (int16_t)(u);
+    s_left_rpm  = (int16_t)(-u);
+    s_right_rpm = (int16_t)(u);
 }
 
 void heading_cancel(void)

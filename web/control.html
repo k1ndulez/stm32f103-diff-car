@@ -1171,7 +1171,8 @@ let steerDir = 0;
 
 
 /* 串口 */
-let port = null, writer = null, busy = false, sent = 0;
+let port = null, writer = null, sent = 0;
+let sendQueue = Promise.resolve();
 
 const $status     = document.getElementById('status');
 const $statusText = document.getElementById('statusText');
@@ -1358,6 +1359,8 @@ async function connect(){
 }
 
 async function disconnect(){
+  stopYawLock();
+  stopDrive(false);
   try{ if (writer) await send('S'); }catch(e){}
   stopReader();
   try{ if (writer){ writer.releaseLock(); writer = null; } }catch(e){}
@@ -1372,18 +1375,22 @@ async function disconnect(){
 $conn.onclick = () => (port ? disconnect() : connect());
 $stop.onclick = () => emergencyStop();
 
-async function send(cmd){
-  if (!writer || busy) return;
-  busy = true;
-  try{
-    await writer.write(new TextEncoder().encode(cmd + '\n'));
-    log('→ ' + cmd, 'tx');
-  }catch(e){
-    log('发送失败：' + (e.message || e), 'er');
-    disconnect();
-  }finally{
-    busy = false;
-  }
+function send(cmd, quiet){
+  if (!writer) return Promise.resolve();
+  const text = cmd + '\n';
+
+  /* 串口写入串行化：锁航向的 Y 重发不能把手动指令挤掉 */
+  sendQueue = sendQueue.then(async () => {
+    if (!writer) return;
+    try{
+      await writer.write(new TextEncoder().encode(text));
+      if (!quiet) log('→ ' + cmd, 'tx');
+    }catch(e){
+      log('发送失败：' + (e.message || e), 'er');
+      setTimeout(disconnect, 0);   /* 不能在队列里直接 await disconnect，会自锁 */
+    }
+  });
+  return sendQueue;
 }
 
 function withSpeed(letter){
@@ -1404,6 +1411,29 @@ const $yawVal   = document.getElementById('yawVal');
 const $btnTurn  = document.getElementById('btnTurn');
 const $btnZero  = document.getElementById('btnZero');
 
+/* 锁航向：每 200 ms 重发 Y，维持车端 300 ms 链路超时 */
+let yawLockTimer = null;
+
+function stopYawLock(){
+  if (yawLockTimer !== null){
+    clearInterval(yawLockTimer);
+    yawLockTimer = null;
+  }
+  if ($btnTurn) $btnTurn.textContent = '确认转向';
+}
+
+function startYawLock(deg){
+  stopYawLock();
+  stopDrive(false);
+  if ($btnTurn) $btnTurn.textContent = '锁航向中';
+  send('S', true);                 /* 先清掉车端可能锁存的超时状态 */
+  send('Y' + deg);                 /* 立即发一次，日志可见 */
+  yawLockTimer = setInterval(() => {
+    if (!writer){ stopYawLock(); return; }
+    send('Y' + deg, true);         /* 重发不进日志，避免刷屏 */
+  }, 200);
+}
+
 function paintYaw(deg, moveModel){
   deg = ((deg % 360) + 360) % 360;
   $yaw.value = deg;
@@ -1413,8 +1443,9 @@ function paintYaw(deg, moveModel){
   if (moveModel) $yaw.dataset.moved = '1';
 }
 
-/* 拖拽车模后，把拉条同步过去 */
+/* 拖拽车模后，把拉条同步过去；这也是一次目标改动，先退出锁航向 */
 window.syncYawSlider = function(){
+  stopYawLock();
   if (!window.carView) return;
   const deg = carView.getTargetDeg();
   $yaw.value = deg;
@@ -1422,15 +1453,22 @@ window.syncYawSlider = function(){
   $yaw.style.setProperty('--fill', (deg / 359 * 100) + '%');
 };
 
-$yaw.oninput = () => paintYaw(Number($yaw.value), true);
-$btnZero.onclick = () => { paintYaw(0, true);
+$yaw.oninput = () => {
+  stopYawLock();
+  paintYaw(Number($yaw.value), true);
+};
 
- log('航向归零'); };
+$btnZero.onclick = () => {
+  stopYawLock();
+  paintYaw(0, true);
+  log('目标已归零，点「确认转向」下发');
+};
+
 $btnTurn.onclick = () => {
   const deg = Number($yaw.value);
   if (!writer){ log('未连接，无法发送转向指令', 'er'); return; }
-  send('Y' + deg);
-  log('目标航向 ' + deg + '°', 'ok');
+  startYawLock(deg);
+  log('锁航向 ' + deg + '° · 每 200 ms 重发', 'ok');
 };
 paintYaw(0, true);
 
@@ -1441,6 +1479,30 @@ const KEYMAP = {
   d:'R', arrowright:'R'
 };
 let heldKey = null;
+
+/* 手动行驶：按住期间每 150 ms 重发，避免车端 300 ms 超时停车 */
+let driveTimer = null;
+let driveCmd   = null;
+
+function stopDrive(sendStop){
+  if (driveTimer !== null){
+    clearInterval(driveTimer);
+    driveTimer = null;
+  }
+  driveCmd = null;
+  if (sendStop !== false) send('S');
+}
+
+function startDrive(cmd){
+  stopYawLock();
+  stopDrive(false);
+  driveCmd = cmd;
+  send(cmd);
+  driveTimer = setInterval(() => {
+    if (!writer || !driveCmd){ stopDrive(false); return; }
+    send(driveCmd, true);
+  }, 150);
+}
 
 function flash(cmd){
   const b = document.querySelector('[data-cmd="' + cmd + '"]');
@@ -1471,7 +1533,7 @@ document.addEventListener('keydown', e => {
   if (cmd === 'F' && window.carMap) carMap.setDrive(1);
   if (cmd === 'B' && window.carMap) carMap.setDrive(-1);
   flash(cmd);
-  send(withSpeed(cmd));
+  startDrive(withSpeed(cmd));
 });
 
 document.addEventListener('keyup', e => {
@@ -1481,7 +1543,7 @@ document.addEventListener('keyup', e => {
     heldKey = null;
     steerDir = 0;
     if (window.carMap) carMap.setDrive(0);
-    send('S');
+    stopDrive();
   }
 });
 
@@ -1489,26 +1551,30 @@ document.querySelectorAll('[data-cmd]').forEach(btn => {
   const cmd = btn.dataset.cmd;
   btn.addEventListener('pointerdown', e => {
     e.preventDefault();
+    if (cmd === 'S'){
+      emergencyStop();
+      return;
+    }
     if (cmd === 'L') steerDir = -1;
     if (cmd === 'R') steerDir =  1;
     if (cmd === 'F' && window.carMap) carMap.setDrive(1);
     if (cmd === 'B' && window.carMap) carMap.setDrive(-1);
-    send(withSpeed(cmd));
+    startDrive(withSpeed(cmd));
   });
   const stop = e => {
     e.preventDefault();
     steerDir = 0;
     if (window.carMap) carMap.setDrive(0);
-    if (cmd !== 'S') send('S');
+    if (cmd !== 'S') stopDrive();
   };
   btn.addEventListener('pointerup', stop);
   btn.addEventListener('pointerleave', stop);
   btn.addEventListener('pointercancel', stop);
 });
 
-window.addEventListener('blur', () => { steerDir = 0; send('S'); });
+window.addEventListener('blur', () => { stopYawLock(); stopDrive(false); steerDir = 0; send('S'); });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden){ steerDir = 0; send('S'); }
+  if (document.hidden){ stopYawLock(); stopDrive(false); steerDir = 0; send('S'); }
 });
 
 /* ---------- 地图路径按钮 ---------- */
@@ -1553,6 +1619,8 @@ if ($btnRun) $btnRun.onclick = () => {
 };
 
 function emergencyStop(){
+  stopYawLock();
+  stopDrive(false);
   if (window.carMap){
     carMap.stop();
     carMap.setDrive(0);

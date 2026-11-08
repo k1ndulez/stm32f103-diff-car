@@ -36,6 +36,8 @@
 #include "bt_ctrl.h"
 #include "sync.h"
 #include "imu.h"
+#include "heading.h"
+
 uint8_t g_imu_status; 
 int16_t g_imu_gz = 0;      /* 陀螺 Z 轴原始值，给 OLED 显示 */
 /* USER CODE END Includes */
@@ -139,6 +141,7 @@ void StartDefaultTask(void *argument)
 	encoder_init();
   motor_stop();
   bt_init();
+  heading_init();
   HAL_UART_Receive_IT(&huart3, &g_bt_rx_byte, 1);
   
   pid_t pid_l, pid_r;
@@ -160,10 +163,45 @@ void StartDefaultTask(void *argument)
     pid_r.ki = g_params[1];
     pid_r.kd = g_params[2];
 
-    bt_tick(HAL_GetTick());
+    uint32_t now_ms = HAL_GetTick();
+    bt_tick(now_ms);
 
-    float tl = (float)bt_get_left_rpm();
-    float tr = (float)bt_get_right_rpm();
+    int16_t  yaw_target;
+    uint8_t  have_yaw   = bt_take_yaw(&yaw_target);
+    uint8_t  have_drive = bt_take_drive();
+
+    if (have_yaw)
+    {
+      if(g_imu_status == 0x00) 
+      {
+         heading_start(yaw_target, now_ms);
+      }
+      else
+        heading_cancel();
+    }
+    else if (have_drive)
+    {
+    heading_cancel();
+    }
+    
+    if (bt_link_ok() == 0u)
+    {
+    heading_cancel();
+    }
+
+    heading_update(g_imu_yaw, g_imu_yaw_dps, now_ms);
+    float tl;
+    float tr;
+    if (heading_active())
+    {
+    tl = (float)heading_left_rpm();
+    tr = (float)heading_right_rpm();
+    }
+    else
+    {
+    tl = (float)bt_get_left_rpm();
+    tr = (float)bt_get_right_rpm();
+    }
     float meas_l = encoder_rpm_left();
     float meas_r = encoder_rpm_right();
 
