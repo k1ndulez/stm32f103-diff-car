@@ -57,6 +57,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/sync.c
     User/imu.c 
     User/cmd.c
+    User/heading.c
 )
 
 # Add include paths
