@@ -44,6 +44,10 @@ static uint32_t s_errors;
 static char    s_cmd[CMD_MAX_LEN];
 static uint8_t s_clen;//游标
 
+static volatile int16_t s_yaw_target;
+static volatile uint8_t s_yaw_pending;   /*自动旋转待处理标志位*/
+static volatile uint8_t s_drive_pending; /*手动控制待处理标志位*/
+
 /* -------------------------------------------------------------- 小工具 --- */
 /* 把一个 0~255 的字节还原成 -128~127 的有符号数（补码） */
 static int16_t byte_to_s8(uint8_t raw)
@@ -92,6 +96,22 @@ static void apply_targets(int32_t l_pct, int32_t r_pct, uint32_t now_ms)
 
     s_left_rpm      = pct_to_rpm(l_pct);
     s_right_rpm     = pct_to_rpm(r_pct);
+    s_last_frame_ms = now_ms;
+    s_link_ok       = 1u;
+    s_frames++;
+    s_drive_pending = 1u;
+    s_yaw_pending   = 0u;
+}
+
+static void apply_yaw(int16_t deg, uint32_t now_ms)
+{
+    s_yaw_target    = deg;
+    s_yaw_pending   = 1u;
+    s_drive_pending = 0u;
+
+    s_left_rpm  = 0;
+    s_right_rpm = 0;
+
     s_last_frame_ms = now_ms;
     s_link_ok       = 1u;
     s_frames++;
@@ -233,13 +253,24 @@ static void feed_cmd(uint8_t byte, uint32_t now_ms)
             cmd_result_t r;
             s_cmd[s_clen] = '\0';
             if (cmd_parse(s_cmd, &r) && r.valid)
-                apply_targets(r.left_pct, r.right_pct, now_ms);
+            {
+                if (r.type == CMD_TYPE_YAW)
+                {
+                apply_yaw(r.yaw_target, now_ms);
+                }
             else
-                s_errors++;
+            {
+                apply_targets(r.left_pct, r.right_pct, now_ms);
+            }
+            }
+        else
+        {
+        s_errors++;
         }
         s_clen = 0u;
         s_mode = BT_MODE_UNKNOWN;
         return;
+        }
     }
 
     /* 行内空格忽略 */
@@ -273,6 +304,9 @@ void bt_init(void)
     s_frames        = 0u;
     s_errors        = 0u;
     s_clen          = 0u;
+    s_yaw_target    = 0;
+    s_yaw_pending   = 0u;
+    s_drive_pending = 0u;
 }
 
 void bt_feed(uint8_t byte, uint32_t now_ms)
@@ -301,7 +335,7 @@ void bt_feed(uint8_t byte, uint32_t now_ms)
         }
         else if (byte == 'F' || byte == 'f' || byte == 'B' || byte == 'b' ||
                  byte == 'L' || byte == 'l' || byte == 'R' || byte == 'r' ||
-                 byte == 'S' || byte == 's')
+                 byte == 'S' || byte == 's' || byte == 'Y' || byte == 'y')
         {
             s_mode = BT_MODE_CMD;
             s_clen = 0u;
@@ -339,6 +373,8 @@ void bt_tick(uint32_t now_ms)
         s_left_rpm  = 0;
         s_right_rpm = 0;
         s_link_ok   = 0u;
+        s_yaw_pending = 0u;
+        s_drive_pending = 0u;
     }
 }
 
@@ -365,4 +401,21 @@ uint32_t bt_frame_count(void)
 uint32_t bt_error_count(void)
 {
     return s_errors;
+}
+
+uint8_t bt_take_yaw(int16_t *deg)
+{
+    if (s_yaw_pending == 0u) return 0u;
+
+    s_yaw_pending = 0u;
+    if (deg) *deg = s_yaw_target;
+    return 1u;
+}
+
+uint8_t bt_take_drive(void)
+{
+    if (s_drive_pending == 0u) return 0u;
+
+    s_drive_pending = 0u;
+    return 1u;
 }

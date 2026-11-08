@@ -53,8 +53,6 @@ void heading_update(float yaw_deg, float yaw_rate_dps, uint32_t now_ms)
     float rate;
     float u;
     
-    
-    
     if (s_state != HEADING_TURN && s_state != HEADING_HOLD) return;
     if (s_state == HEADING_TURN && (uint32_t)(now_ms - s_start_ms) > HEADING_TIMEOUT_MS)// 5 s 超时
     {    

@@ -66,4 +66,7 @@ uint8_t bt_link_ok(void);
 uint32_t bt_frame_count(void);
 uint32_t bt_error_count(void);
 
+uint8_t bt_take_yaw(int16_t *deg);
+uint8_t bt_take_drive(void);
+
 #endif /* __BT_CTRL_H */
