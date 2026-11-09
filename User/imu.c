@@ -68,6 +68,10 @@ uint8_t imu_calibrate(void)
     }
 
     s_bias_gz = (float)sum / 200.0f;//两百个数据取平均得到零偏
+
+    /* 校准完成时把航向清零：车头当前朝向就是 0° */
+    g_imu_yaw     = 0.0f;
+    g_imu_yaw_dps = 0.0f;
     return 0;
 }
 
@@ -77,7 +81,7 @@ void imu_update(uint16_t dt_ms)//角速度换算角度
 
     if (imu_read(&r) != 0) return;
 
-   float dps = (r.gz - s_bias_gz) / IMU_GYRO_LSB_PER_DPS;
+   float dps = ((r.gz - s_bias_gz) / IMU_GYRO_LSB_PER_DPS) * IMU_YAW_SIGN;
 
     g_imu_yaw_dps = dps;
 

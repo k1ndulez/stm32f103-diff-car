@@ -43,6 +43,11 @@
 
   .wrap{width:100%; max-width:520px; position:relative; z-index:1}
 
+  /* 小屏内容比视口高：从顶部开始排，让页面正常滚动 */
+  @media (max-width:1199px){
+    body{height:auto; min-height:100vh; align-items:flex-start}
+  }
+
   /* 两栏布局 */
   .cols{display:flex; flex-direction:column}
   .col-left,.col-right{display:flex; flex-direction:column; min-width:0}
@@ -302,7 +307,34 @@
   #yawVal::after{content:"°"; font-size:13px; opacity:.6; margin-left:1px}
   .yaw-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px}
   .yaw-head span:first-child{font-size:11px; letter-spacing:2px; color:var(--dim)}
-  .yaw-row{display:flex; gap:10px; margin-top:14px}
+
+  /* 目标航向旋钮 */
+  .yaw-panel{display:flex; align-items:center; gap:18px}
+  .knob-wrap{
+    position:relative; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .yaw-side{flex:1 1 auto; min-width:0}
+  #yawKnob{
+    width:164px; height:164px; display:block;
+    touch-action:none; cursor:grab; border-radius:50%; outline:none;
+    filter:drop-shadow(0 0 20px rgba(34,211,238,.10));
+  }
+  #yawKnob.dragging{cursor:grabbing}
+  #yawKnob:focus-visible{box-shadow:0 0 0 2px rgba(34,211,238,.55)}
+  #yaw.yaw-range{
+    position:absolute; width:1px; height:1px;
+    opacity:0; pointer-events:none;
+  }
+  @media (min-width:1200px) and (max-height:900px){
+    #yawKnob{width:136px; height:136px}
+  }
+  @media (max-width:520px){
+    .yaw-panel{flex-direction:column; gap:8px}
+    .yaw-side{width:100%}
+  }
+
+  .yaw-row{display:flex; gap:10px; margin-top:0}
   input[type=range]{
     -webkit-appearance:none; appearance:none;
     width:100%; height:5px; border-radius:99px; outline:none;
@@ -382,11 +414,19 @@
 
   <!-- 航向设定 -->
   <div class="card">
-    <div class="yaw-head"><span>目标航向</span><span id="yawVal">000</span></div>
-    <input id="yaw" type="range" min="0" max="359" value="0" step="1">
-    <div class="yaw-row">
-      <button id="btnTurn" class="btn btn-main">确认转向</button>
-      <button id="btnZero" class="btn">归零</button>
+    <div class="yaw-panel">
+      <div class="knob-wrap">
+        <canvas id="yawKnob" width="328" height="328" tabindex="0"
+                aria-label="目标航向旋钮"></canvas>
+        <input id="yaw" class="yaw-range" type="range" min="0" max="359" value="0" step="1">
+      </div>
+      <div class="yaw-side">
+        <div class="yaw-head"><span>目标航向</span><span id="yawVal">000</span></div>
+        <div class="yaw-row">
+          <button id="btnTurn" class="btn btn-main">确认转向</button>
+          <button id="btnZero" class="btn">归零</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -538,10 +578,11 @@
   box(-0.078, 0.032,  0.125,  0.078, 0.052,  0.132, [34, 211, 238], 1);
   box(-0.078, 0.032, -0.132,  0.078, 0.046, -0.125, [255, 77, 106], 1);
 
-  wheel(-0.108, 0.033,  0.080, 0.033, 0.018, [16, 20, 28]);
-  wheel( 0.108, 0.033,  0.080, 0.033, 0.018, [16, 20, 28]);
-  wheel(-0.108, 0.033, -0.080, 0.033, 0.018, [16, 20, 28]);
-  wheel( 0.108, 0.033, -0.080, 0.033, 0.018, [16, 20, 28]);
+  /* 三轮：前双轮 + 后单轮 */
+  wheel(-0.116, 0.034,  0.085, 0.034, 0.020, [16, 20, 28]);
+  wheel( 0.116, 0.034,  0.085, 0.034, 0.020, [16, 20, 28]);
+  wheel( 0.000, 0.036, -0.138, 0.036, 0.028, [16, 20, 28]);
+  box(-0.011, 0.030, -0.148, 0.011, 0.042, -0.112, [40, 46, 58], 1); /* 后轮支架 */
 
   /* ---------- 数学 ---------- */
   const LN = [-0.42, 0.82, -0.39];
@@ -1410,6 +1451,93 @@ const $yaw      = document.getElementById('yaw');
 const $yawVal   = document.getElementById('yawVal');
 const $btnTurn  = document.getElementById('btnTurn');
 const $btnZero  = document.getElementById('btnZero');
+const $yawKnob  = document.getElementById('yawKnob');
+const knobCtx   = $yawKnob ? $yawKnob.getContext('2d') : null;
+
+/* 圆形目标航向旋钮：0° 在正上方，顺时针增加 */
+function drawKnob(){
+  if (!knobCtx) return;
+
+  const dpr  = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = $yawKnob.getBoundingClientRect();
+  const W    = Math.max(1, Math.round(rect.width * dpr));
+  if ($yawKnob.width !== W || $yawKnob.height !== W){
+    $yawKnob.width  = W;
+    $yawKnob.height = W;
+  }
+
+  const ctx = knobCtx;
+  const cx = W / 2;
+  const cy = W / 2;
+  const R  = W * 0.315;
+  const deg = Number($yaw.value) || 0;
+  const rad = d => (d - 90) * Math.PI / 180;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, W, W);
+
+  /* 刻度：每 30° 一格，90° 加粗 */
+  for (let i = 0; i < 12; i++){
+    const a  = rad(i * 30);
+    const r0 = R + W * 0.055;
+    const r1 = R + W * (i % 3 === 0 ? 0.095 : 0.078);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+    ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+    ctx.strokeStyle = (i % 3 === 0) ? 'rgba(34,211,238,.55)' : 'rgba(56,189,248,.16)';
+    ctx.lineWidth   = (i % 3 === 0 ? 2 : 1) * dpr;
+    ctx.stroke();
+  }
+
+  /* 底圈 */
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.lineWidth   = 7 * dpr;
+  ctx.stroke();
+
+  /* 已转过的角度 */
+  if (deg > 0.5){
+    const g = ctx.createLinearGradient(0, 0, W, W);
+    g.addColorStop(0, '#22d3ee');
+    g.addColorStop(1, '#3b82f6');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, rad(0), rad(deg), false);
+    ctx.strokeStyle = g;
+    ctx.lineWidth   = 7 * dpr;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+  }
+
+  /* 中心盘 */
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 0.68, 0, Math.PI * 2);
+  ctx.fillStyle   = 'rgba(8,14,26,.92)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(56,189,248,.22)';
+  ctx.lineWidth   = 1 * dpr;
+  ctx.stroke();
+
+  /* 指针 */
+  const a = rad(deg);
+  ctx.beginPath();
+  ctx.moveTo(cx + Math.cos(a) * R * 0.30, cy + Math.sin(a) * R * 0.30);
+  ctx.lineTo(cx + Math.cos(a) * R * 0.78, cy + Math.sin(a) * R * 0.78);
+  ctx.strokeStyle = '#e0f7ff';
+  ctx.lineWidth   = 2.5 * dpr;
+  ctx.lineCap     = 'round';
+  ctx.stroke();
+
+  /* 手柄 */
+  ctx.beginPath();
+  ctx.arc(cx + Math.cos(a) * R, cy + Math.sin(a) * R, 4.5 * dpr, 0, Math.PI * 2);
+  ctx.fillStyle = '#e0f7ff';
+  ctx.save();
+  ctx.shadowColor = 'rgba(34,211,238,.95)';
+  ctx.shadowBlur  = 14 * dpr;
+  ctx.fill();
+  ctx.restore();
+}
 
 /* 锁航向：每 200 ms 重发 Y，维持车端 300 ms 链路超时 */
 let yawLockTimer = null;
@@ -1441,6 +1569,7 @@ function paintYaw(deg, moveModel){
   $yaw.style.setProperty('--fill', (deg / 359 * 100) + '%');
   if (moveModel && window.carView) carView.setYawDeg(deg);
   if (moveModel) $yaw.dataset.moved = '1';
+  drawKnob();
 }
 
 /* 拖拽车模后，把拉条同步过去；这也是一次目标改动，先退出锁航向 */
@@ -1451,6 +1580,7 @@ window.syncYawSlider = function(){
   $yaw.value = deg;
   $yawVal.textContent = String(deg).padStart(3, '0');
   $yaw.style.setProperty('--fill', (deg / 359 * 100) + '%');
+  drawKnob();
 };
 
 $yaw.oninput = () => {
@@ -1471,6 +1601,67 @@ $btnTurn.onclick = () => {
   log('锁航向 ' + deg + '° · 每 200 ms 重发', 'ok');
 };
 paintYaw(0, true);
+drawKnob();
+
+/* 旋钮拖动：按“转过的角度差”累加，避免手指按下时跳变 */
+(function(){
+  if (!$yawKnob) return;
+
+  let dragging  = false;
+  let lastAngle = 0;
+
+  function angleAt(e){
+    const r  = $yawKnob.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width  / 2);
+    const dy = e.clientY - (r.top  + r.height / 2);
+    let a = Math.atan2(dx, -dy) * 180 / Math.PI;   /* 上方 = 0°，顺时针增加 */
+    if (a < 0) a += 360;
+    return a;
+  }
+
+  function applyDelta(d){
+    let v = (Number($yaw.value) + d + 360) % 360;
+    stopYawLock();
+    paintYaw(Math.round(v), true);
+  }
+
+  $yawKnob.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    dragging  = true;
+    lastAngle = angleAt(e);
+    $yawKnob.classList.add('dragging');
+    try{ $yawKnob.setPointerCapture(e.pointerId); }catch(err){}
+  });
+
+  $yawKnob.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const a = angleAt(e);
+    let d = a - lastAngle;
+    while (d >  180) d -= 360;
+    while (d < -180) d += 360;
+    lastAngle = a;
+    if (Math.abs(d) >= 1) applyDelta(d);
+  });
+
+  const end = () => {
+    dragging = false;
+    $yawKnob.classList.remove('dragging');
+  };
+  $yawKnob.addEventListener('pointerup', end);
+  $yawKnob.addEventListener('pointercancel', end);
+
+  $yawKnob.addEventListener('keydown', e => {
+    let d = 0;
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowDown') d = -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp')   d =  1;
+    if (!d) return;
+    e.preventDefault();
+    e.stopPropagation();
+    applyDelta(d);
+  });
+
+  window.addEventListener('resize', drawKnob);
+})();
 
 const KEYMAP = {
   w:'F', arrowup:'F',

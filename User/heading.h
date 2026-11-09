@@ -8,7 +8,7 @@
 #define HEADING_TOL_DEG         (3.0f) //容差
 #define HEADING_RATE_TOL_DPS    (35.0f)
 #define HEADING_TIMEOUT_MS      (5000u)
-#define HEADING_OUTPUT_SIGN     (1.0f) //方向校准开关
+#define HEADING_OUTPUT_SIGN     (-1.0f) //方向校准开关：实测反向
 
 #include <stdint.h>
 

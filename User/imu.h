@@ -15,6 +15,12 @@
 
 #define IMU_GYRO_LSB_PER_DPS   131.07f    /*每一°/s对应131.07，角速度量程±250°/s */
 
+/* yaw 正方向校准：
+   +1 = MPU 原始方向（Z 轴朝上时逆时针为正）
+   -1 = 顺时针为正，和网页/车模的 0°→90° 约定一致
+   装反或芯片朝下时，改这一个符号即可。 */
+#define IMU_YAW_SIGN           (-1.0f)
+
 extern float g_imu_yaw_dps;   /* 补偿后的角速度（°/s）*/
 extern float g_imu_yaw;       /* 积分后的航向角（度）*/
 
