@@ -7,8 +7,8 @@
 #define HEADING_MAX_RPM         (90.0f)
 #define HEADING_TOL_DEG         (3.0f) //容差
 #define HEADING_RATE_TOL_DPS    (35.0f)
-#define HEADING_TIMEOUT_MS      (5000u)
-#define HEADING_OUTPUT_SIGN     (-1.0f) //方向校准开关：实测反向
+#define HEADING_TIMEOUT_MS      (10000u) // 调试：先放宽到 10 s，确认是否超时
+#define HEADING_OUTPUT_SIGN     (-1.0f) //方向校准开关：先试 +1
 
 #include <stdint.h>
 
@@ -24,6 +24,8 @@ void heading_start(int16_t target_deg, uint32_t now_ms);
 void heading_update(float yaw_deg, float yaw_rate_dps, uint32_t now_ms);
 void heading_cancel(void);
 uint8_t heading_active(void);
+heading_state_t heading_state(void);
+int16_t heading_target_deg(void);
 int16_t heading_left_rpm(void);
 int16_t heading_right_rpm(void);
 

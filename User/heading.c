@@ -104,6 +104,16 @@ uint8_t heading_active(void)
     return 0u;
 }
 
+heading_state_t heading_state(void)
+{
+    return s_state;
+}
+
+int16_t heading_target_deg(void)
+{
+    return s_target;
+}
+
 int16_t heading_left_rpm(void)
 {
     return s_left_rpm;

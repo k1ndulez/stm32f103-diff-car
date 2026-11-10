@@ -148,8 +148,8 @@ void StartDefaultTask(void *argument)
 
   pid_init(&pid_l, 3.0f, 0.8f, 0.03f, -7200.0f, 7200.0f);
   pid_init(&pid_r, 5.0f, 0.9f, 0.03f, -7200.0f, 7200.0f);
-  pid_set_integral_limit(&pid_l, -3600.0f, 3600.0f);
-  pid_set_integral_limit(&pid_r, -3600.0f, 3600.0f);
+  pid_set_integral_limit(&pid_l, -6000.0f, 6000.0f);
+  pid_set_integral_limit(&pid_r, -6000.0f, 6000.0f);
 
   uint32_t next = osKernelGetTickCount();
 
@@ -216,18 +216,26 @@ void StartDefaultTask(void *argument)
     /* 遥测：5 Hz 发送。
        telem_buf 必须是 static —— DMA 在本函数返回后还会继续读它，
        放栈上会被下一轮循环覆盖成垃圾。                                          */
-    static char     telem_buf[48];
+    static char     telem_buf[80];
     static uint32_t telem_div = 0;
 
     if (++telem_div >= 10)          /* 20 ms × 10 = 200 ms，给 21 ms 的传输留足时间 */
     {
       telem_div = 0;
-      int n = snprintf(telem_buf, sizeof(telem_buf), "%d %d %d %d %d\n",
+      int sign_code = ((HEADING_OUTPUT_SIGN > 0.0f) ? 2 : 0)
+                    | ((IMU_YAW_SIGN          > 0.0f) ? 1 : 0);
+
+      int n = snprintf(telem_buf, sizeof(telem_buf), "%d %d %d %d %d %d %d %d %d %d\n",
                        (int)(target_l * 10.0f),
                        (int)(target_r * 10.0f),
                        (int)(meas_l * 10.0f),
                        (int)(meas_r * 10.0f),
-                       (int)g_imu_yaw);          /* 真实航向角（-180~180） */
+                       (int)g_imu_yaw,          /* 真实航向角（-180~180） */
+                       (int)duty_l,             /* PID 输出，调试用 */
+                       (int)duty_r,
+                       (int)heading_target_deg(), /* 航向目标角 */
+                       (int)heading_state(),     /* 0=IDLE 1=TURN 2=HOLD 3=TIMEOUT */
+                       sign_code);                /* bit1=OUTPUT正, bit0=IMU正 */
 
       /* 用阻塞发送：5 Hz 下每 200 ms 才卡 21 ms，没必要上 DMA。
          注意：本工程的 .ioc 里已经没有 USART3 的 DMA 配置，
