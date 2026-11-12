@@ -90,7 +90,7 @@
 
     .view-card{flex:1 1 auto; min-height:0; display:flex; flex-direction:column}
     .view-grid{flex:1 1 auto; height:auto; min-height:200px}
-    .col-right>.telemetry-card{flex:0 0 280px; min-height:0;
+    .col-right>.telemetry-card{flex:0 0 460px; min-height:0;
                                display:flex; flex-direction:column}
     #log{flex:1 1 auto; height:auto; min-height:90px}
     .tips{flex:0 0 auto; margin-top:12px}
@@ -275,12 +275,17 @@
     .yaw-tile{flex-basis:78px; width:78px}
     .yaw-tile-val{font-size:22px}
   }
-  #chart{flex:1 1 auto; width:100%; min-height:56px; display:block}
+  #chart{flex:0 0 42px; width:100%; min-height:0; display:block}
   .chart-label{
     font-size:9px; letter-spacing:1.6px; color:#3b4d66;
     margin:2px 0 1px;
+    display:flex; align-items:center; justify-content:space-between;
   }
-  #yawChart{width:100%; height:54px; display:block}
+  .chart-span{
+    background:#0b1220; color:#8b5cf6; border:1px solid #1e3a5f;
+    border-radius:4px; font-size:9px; padding:1px 3px; outline:none;
+  }
+  #yawChart{width:100%; height:210px; display:block}
   .tele-raw{
     font-family:ui-monospace,Consolas,monospace; font-size:10.5px;
     color:#3b4d66; letter-spacing:.5px; margin-top:6px;
@@ -565,7 +570,16 @@
       </div>
     </div>
     <canvas id="chart"></canvas>
-    <div class="chart-label">YAW 实际(青) / 目标(黄)</div>
+    <div class="chart-label">
+      <span>YAW 实际(青) / 目标(黄)</span>
+      <select id="chartSpan" class="chart-span" title="时间窗口">
+        <option value="6">6 s</option>
+        <option value="12">12 s</option>
+        <option value="24">24 s</option>
+        <option value="48">48 s</option>
+        <option value="100" selected>100 s</option>
+      </select>
+    </div>
     <canvas id="yawChart"></canvas>
     <div class="tele-raw" id="telemRaw">原始: —</div>
   </div>
@@ -1339,9 +1353,23 @@ const yawChartCx = yawChartCv ? yawChartCv.getContext('2d') : null;
 
 window.carLive = window.carLive || { yawDeg: null, follow: true };
 
-const HIST_MAX = 240;                 /* 240 点 @5Hz ≈ 48 秒 */
+let histMax = 500;                    /* 默认 100 s @5Hz = 500 点 */
 const hist = { tl: [], tr: [], ml: [], mr: [] };
 const yawHist = { a: [], t: [] };
+
+const $chartSpan = document.getElementById('chartSpan');
+if ($chartSpan){
+  $chartSpan.onchange = () => {
+    const sec = Number($chartSpan.value);
+    if (!isFinite(sec) || sec <= 0) return;
+    histMax = Math.round(sec * 5);    /* 5 Hz */
+    for (const k in hist){ while (hist[k].length > histMax) hist[k].shift(); }
+    while (yawHist.a.length > histMax) yawHist.a.shift();
+    while (yawHist.t.length > histMax) yawHist.t.shift();
+    drawChart();
+    drawYawChart();
+  };
+}
 let telemCount = 0, telemT0 = 0;
 let reader = null, reading = false;
 
@@ -1349,13 +1377,8 @@ let reader = null, reading = false;
 function pushYawHist(arr, deg){
   let v = ((deg % 360) + 360) % 360;
   if (v > 180) v -= 360;
-  if (arr.length){
-    const prev = arr[arr.length - 1];
-    while (v - prev >  180) v -= 360;
-    while (v - prev < -180) v += 360;
-  }
   arr.push(v);
-  if (arr.length > HIST_MAX) arr.shift();
+  if (arr.length > histMax) arr.shift();
 }
 
 function yawDirText(deg){
@@ -1372,7 +1395,7 @@ function yawDirText(deg){
 function onTelemetry(line){
   const raw = line.trim();
   if ($telemRaw) $telemRaw.textContent = '\u539f\u59cb: ' + raw.slice(0, 90);
-  const parts = raw.split(/\s+/);
+  const parts = raw.split(/[,\s]+/);
   if (parts.length < 4) return;
   const v = parts.slice(0, 10).map(Number);
   if (v.slice(0, 5).some(x => !isFinite(x))) return;
@@ -1403,7 +1426,7 @@ function onTelemetry(line){
   }
   for (const k in hist){
     hist[k].push(d[k]);
-    if (hist[k].length > HIST_MAX) hist[k].shift();
+    if (hist[k].length > histMax) hist[k].shift();
   }
 
   if ($tLt) $tLt.textContent = d.tl.toFixed(1);
@@ -1442,7 +1465,7 @@ function drawChart(){
   if (hi - lo < 10){ const m = (hi+lo)/2; lo = m-10; hi = m+10; }
   const padY = (hi-lo)*0.12; lo -= padY; hi += padY;
 
-  const xOf = i => W - ((n-1-i)/(HIST_MAX-1)) * W;
+  const xOf = i => (i / (n - 1)) * W;
   const yOf = v => H - ((v-lo)/(hi-lo)) * (H-2) - 1;
 
   /* 网格 */
@@ -1472,6 +1495,43 @@ function drawChart(){
   line(hist.mr, 'rgba(255,77,106,1)',    2.0, false);  /* 右实测 */
 }
 
+/* 把实际/目标放到同一条连续角度线上：实际按上一拍展开，目标相对同一拍的实际展开。
+   这样 179°→-179° 不会被画成竖线，也不会出现两条线差 360°。 */
+function wrap180(v){
+  v = ((v % 360) + 360) % 360;
+  return v > 180 ? v - 360 : v;
+}
+
+function prepareYawSeries(){
+  const ar = yawHist.a, tr = yawHist.t;
+  const a = [];
+  let prev = null;
+  for (let i = 0; i < ar.length; i++){
+    const v = (prev === null) ? ar[i] : prev + wrap180(ar[i] - prev);
+    a.push(v);
+    prev = v;
+  }
+
+  const off = a.length - tr.length;
+  const t = [];
+  for (let i = 0; i < tr.length; i++){
+    const ai = i + off;
+    t.push(a[ai] + wrap180(tr[i] - ar[ai]));
+  }
+  return { a, t };
+}
+
+function smoothLinear(arr, win){
+  const out = [];
+  for (let i = 0; i < arr.length; i++){
+    const a = Math.max(0, i - win + 1);
+    let s = 0;
+    for (let j = a; j <= i; j++) s += arr[j];
+    out.push(s / (i - a + 1));
+  }
+  return out;
+}
+
 function drawYawChart(){
   if (!yawChartCx) return;
   const cv = yawChartCv, cx = yawChartCx;
@@ -1483,27 +1543,59 @@ function drawYawChart(){
 
   cx.clearRect(0, 0, W, H);
 
-  const n = Math.max(yawHist.a.length, yawHist.t.length);
+  const series = prepareYawSeries();
+  const n = Math.max(series.a.length, series.t.length);
   if (n < 2) return;
 
-  let lo = -180, hi = 180;
-  for (const arr of [yawHist.a, yawHist.t]){
-    for (const v of arr){ if (v < lo) lo = v; if (v > hi) hi = v; }
-  }
+  /* 用 5%~95% 分位取范围，避免历史里的单个异常值把整张图压扁 */
+  const all = [];
+  for (const arr of [series.a, series.t]) for (const v of arr) if (isFinite(v)) all.push(v);
+  if (!all.length) return;
+  all.sort((x, y) => x - y);
+  const q = p => all[Math.min(all.length - 1, Math.max(0, Math.round((all.length - 1) * p)))];
+  let lo = q(0.05), hi = q(0.95);
   if (hi - lo < 30){ const m = (hi + lo) / 2; lo = m - 15; hi = m + 15; }
-  const pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
+  const pad = (hi - lo) * 0.16; lo -= pad; hi += pad;
 
-  const xOf = i => W - ((n - 1 - i) / (HIST_MAX - 1)) * W;
-  const yOf = v => H - ((v - lo) / (hi - lo)) * (H - 2) - 1;
+  const labelW = 26 * dpr;
+  const xOf = i => labelW + (i / (n - 1)) * (W - labelW);
+  const yOf = v => H - ((v - lo) / (hi - lo)) * (H - 4) - 2;
 
-  cx.strokeStyle = 'rgba(56,189,248,.10)';
-  cx.lineWidth = 1 * dpr;
+  cx.font = `${9 * dpr}px ui-monospace, Consolas, monospace`;
+  cx.textBaseline = 'middle';
+  cx.textAlign = 'left';
+
   for (let g = 0; g <= 2; g++){
-    const yy = (H - 2) * g / 2 + 1;
-    cx.beginPath(); cx.moveTo(0, yy); cx.lineTo(W, yy); cx.stroke();
+    const yy = (H - 4) * g / 2 + 2;
+    const val = hi - (hi - lo) * g / 2;
+    cx.strokeStyle = 'rgba(56,189,248,.10)';
+    cx.lineWidth = 1 * dpr;
+    cx.beginPath(); cx.moveTo(labelW, yy); cx.lineTo(W, yy); cx.stroke();
+    cx.fillStyle = 'rgba(139,148,158,.65)';
+    cx.fillText(Math.round(val) + '°', 2 * dpr, yy);
   }
 
-  function yawLine(arr, color, width, dash){
+  function stepLine(arr, color, width, dash){
+    if (arr.length < 2) return;
+    const off = n - arr.length;
+    cx.beginPath();
+    let prevY = null;
+    for (let i = 0; i < arr.length; i++){
+      const px = xOf(i + off), py = yOf(arr[i]);
+      if (i === 0){ cx.moveTo(px, py); }
+      else { cx.lineTo(px, prevY); cx.lineTo(px, py); }
+      prevY = py;
+    }
+    cx.strokeStyle = color;
+    cx.lineWidth = width * dpr;
+    cx.lineJoin = 'round';
+    cx.lineCap = 'round';
+    cx.setLineDash(dash ? [4*dpr, 4*dpr] : []);
+    cx.stroke();
+    cx.setLineDash([]);
+  }
+
+  function normalLine(arr, color, width){
     if (arr.length < 2) return;
     const off = n - arr.length;
     cx.beginPath();
@@ -1513,13 +1605,42 @@ function drawYawChart(){
     }
     cx.strokeStyle = color;
     cx.lineWidth = width * dpr;
-    cx.setLineDash(dash ? [4*dpr, 4*dpr] : []);
+    cx.lineJoin = 'round';
+    cx.lineCap = 'round';
     cx.stroke();
-    cx.setLineDash([]);
   }
 
-  yawLine(yawHist.t, 'rgba(251,191,36,.9)', 1.4, true);   /* 目标 yaw */
-  yawLine(yawHist.a, 'rgba(34,211,238,1)',  2.0, false);  /* 实际 yaw */
+  const actual = smoothLinear(series.a, 5);
+
+  /* 实际值的浅色填充，让曲线更有层次 */
+  if (actual.length >= 2){
+    const off = n - actual.length;
+    cx.beginPath();
+    for (let i = 0; i < actual.length; i++){
+      const px = xOf(i + off), py = yOf(actual[i]);
+      i ? cx.lineTo(px, py) : cx.moveTo(px, py);
+    }
+    const lastX = xOf(n - 1);
+    cx.lineTo(lastX, H);
+    cx.lineTo(xOf(off), H);
+    cx.closePath();
+    const grad = cx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, 'rgba(34,211,238,.13)');
+    grad.addColorStop(1, 'rgba(34,211,238,0)');
+    cx.fillStyle = grad;
+    cx.fill();
+  }
+
+  stepLine(series.t, 'rgba(251,191,36,.95)', 1.3, true);   /* 目标 yaw：阶梯 */
+  normalLine(actual,     'rgba(34,211,238,1)',  1.8);      /* 实际 yaw：连续曲线 */
+
+  if (actual.length){
+    const px = xOf(n - 1), py = yOf(actual[actual.length - 1]);
+    cx.beginPath();
+    cx.arc(px, py, 2.4 * dpr, 0, Math.PI * 2);
+    cx.fillStyle = 'rgba(34,211,238,1)';
+    cx.fill();
+  }
 }
 
 async function startReader(){
@@ -1589,14 +1710,14 @@ async function connect(){
 
 async function disconnect(){
   if (disconnecting) return;
-  disconnecting = true;
 
   stopYawLock();
   stopDrive(false);
 
-  /* 最多等 300 ms，避免串口坏掉时 disconnect 自己卡死 */
+  /* 先把 S 发出去，再置 disconnecting；send() 在 disconnecting=1 时会直接返回 */
   try{ await Promise.race([send('S'), new Promise(resolve => setTimeout(resolve, 300))]); }catch(e){}
 
+  disconnecting = true;
   await stopReader();
 
   try{ if (writer){ writer.releaseLock(); writer = null; } }catch(e){}
@@ -1902,6 +2023,7 @@ let heldKey = null;
 /* 手动行驶：按住期间每 150 ms 重发，避免车端 300 ms 超时停车 */
 let driveTimer = null;
 let driveCmd   = null;
+let driveSendBusy = false;   /* 上一条手动指令还没写完时，不要继续堆队列 */
 
 function stopDrive(sendStop){
   if (driveTimer !== null){
@@ -1919,7 +2041,9 @@ function startDrive(cmd){
   send(cmd);
   driveTimer = setInterval(() => {
     if (!writer || !driveCmd){ stopDrive(false); return; }
-    send(driveCmd, true);
+    if (driveSendBusy) return;          /* 上一条还没发完，丢掉这次重发 */
+    driveSendBusy = true;
+    send(driveCmd, true).finally(() => { driveSendBusy = false; });
   }, 150);
 }
 

@@ -6,6 +6,15 @@ static uint32_t        s_start_ms;
 static int16_t         s_left_rpm;
 static int16_t         s_right_rpm;
 
+/* 0=KP 1=KD 2=MIN_RPM 3=MAX_RPM，可由 OLED 菜单在线修改 */
+float g_heading_params[4] =
+{
+    HEADING_KP,
+    HEADING_KD,
+    HEADING_MIN_RPM,
+    HEADING_MAX_RPM
+};
+
 
 
 static float wrap180(float a)//缩短路径
@@ -74,13 +83,13 @@ void heading_update(float yaw_deg, float yaw_rate_dps, uint32_t now_ms)
         }
     }
 
-    u = HEADING_KP*err - HEADING_KD*rate;
+    u = g_heading_params[0]*err - g_heading_params[1]*rate;
 
-    if (u >  HEADING_MAX_RPM) u =  HEADING_MAX_RPM;
-    if (u < -HEADING_MAX_RPM) u = -HEADING_MAX_RPM;
+    if (u >  g_heading_params[3]) u =  g_heading_params[3];
+    if (u < -g_heading_params[3]) u = -g_heading_params[3];
 
-    if (u > 0.0f && u < HEADING_MIN_RPM)  u =  HEADING_MIN_RPM;
-    if (u < 0.0f && u > -HEADING_MIN_RPM) u = -HEADING_MIN_RPM;//输出转向速度限幅
+    if (u > 0.0f && u < g_heading_params[2])  u =  g_heading_params[2];
+    if (u < 0.0f && u > -g_heading_params[2]) u = -g_heading_params[2];//输出转向速度限幅
 
     u *= HEADING_OUTPUT_SIGN;
 

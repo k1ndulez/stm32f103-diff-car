@@ -3,6 +3,7 @@
 #include "oled.h"
 #include "font.h"
 #include "bt_ctrl.h"
+#include "heading.h"
 #include <stdio.h>
 
 extern uint8_t g_imu_status;
@@ -26,6 +27,23 @@ int g_rpm_cmd  = 0;          /* AUTO 目标转速，可编辑，步长 5 */
 static const float k_step[5] = { 5.0f, 0.1f, 0.01f, 0.001f, 1.0f };/*分度值*/
 static const float k_min[5]  = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 static const float k_max[5]  = { 300.0f, 100.0f, 10.0f, 1.0f, 10.0f };
+
+/* 航向环参数：0 号行是 DEBUG，不参与编辑 */
+static const float h_step[5] = { 0.0f, 0.1f, 0.1f, 1.0f, 5.0f };
+static const float h_min[5]  = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+static const float h_max[5]  = { 0.0f, 10.0f, 10.0f, 150.0f, 150.0f };
+
+static char heading_state_char(heading_state_t s)
+{
+    switch (s)
+    {
+    case HEADING_IDLE:    return 'I';
+    case HEADING_TURN:    return 'T';
+    case HEADING_HOLD:    return 'H';
+    case HEADING_TIMEOUT: return 'X';
+    default:              return '?';
+    }
+}
 
 
 
@@ -51,7 +69,7 @@ void draw_main(void)//主菜单完成图像绘制
 
 void draw_bt_control(void)
 {
-    static const char *items[5] = { "RPM", "P", "I", "D", "FILTER" };
+    static const char *items[5] = { "DEBUG", "KP", "KD", "MIN", "MAX" };
 
     /* 标题 8 px，正文 12 px 行距 11：5 行正好占满 64 px */
     char head[24];
@@ -70,13 +88,18 @@ void draw_bt_control(void)
 
         if (i == 0)
         {
-            sprintf(line, "%sRPM: %4d%s", sel, s_rpm_show, mark);
+            sprintf(line, "%sY%3d T%3d %c%s",
+                    sel,
+                    (int)g_imu_yaw,
+                    (int)heading_target_deg(),
+                    heading_state_char(heading_state()),
+                    mark);
         }
         else
         {
-            float val = (s_edit && i == s_cursor) ? s_edit_val : g_params[i - 1];
+            float val = (s_edit && i == s_cursor) ? s_edit_val : g_heading_params[i - 1];
             int v = (int)(val * 1000.0f + 0.5f);
-            sprintf(line, "%s%s: %d.%03d%s", sel, items[i], v / 1000, v % 1000, mark);
+            sprintf(line, "%s%s:%d.%03d%s", sel, items[i], v / 1000, v % 1000, mark);
         }
 
         OLED_PrintASCIIString(0, y, line, &afont12x6, OLED_COLOR_NORMAL);
@@ -179,7 +202,7 @@ void handle_btctrl(key_event_t e)
         case KEY_OK:        if (s_cursor >= 1)
                             {
                                 s_edit = 1;
-                                s_edit_val = g_params[s_cursor - 1];
+                                s_edit_val = g_heading_params[s_cursor - 1];
                             }
                             break;
         case KEY_BACK:      s_cursor = 0;
@@ -192,17 +215,28 @@ void menu_handle(key_event_t e)//菜单页面跳转
 {
     if (s_edit == 1)
     {
-        float step = k_step[s_cursor];
-        float lo   = k_min[s_cursor];
-        float hi   = k_max[s_cursor];
+        uint8_t bt_page = (s_page == PAGE_BT_CTRL) ? 1u : 0u;
+        float step = bt_page ? h_step[s_cursor] : k_step[s_cursor];
+        float lo   = bt_page ? h_min[s_cursor]  : k_min[s_cursor];
+        float hi   = bt_page ? h_max[s_cursor]  : k_max[s_cursor];
 
         switch (e)
         {
             case KEY_LEFT:  s_edit_val -= step; break;
             case KEY_RIGHT: s_edit_val += step; break;
             case KEY_OK:
-                if (s_cursor == 0) g_rpm_cmd = (int)(s_edit_val + 0.5f);
-                else               g_params[s_cursor - 1] = s_edit_val;
+                if (bt_page)
+                {
+                    g_heading_params[s_cursor - 1] = s_edit_val;
+                }
+                else if (s_cursor == 0)
+                {
+                    g_rpm_cmd = (int)(s_edit_val + 0.5f);
+                }
+                else
+                {
+                    g_params[s_cursor - 1] = s_edit_val;
+                }
                 s_edit = 0;
                 break;
             case KEY_BACK:  s_edit = 0; break;

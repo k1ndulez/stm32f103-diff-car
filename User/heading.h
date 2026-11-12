@@ -1,11 +1,11 @@
 #ifndef __HEADING_H_
 #define __HEADING_H_
 
-#define HEADING_KP              (1.20f)
-#define HEADING_KD              (0.60f)
+#define HEADING_KP              (6.0f)
+#define HEADING_KD              (0.70f)
 #define HEADING_MIN_RPM         (20.0f)
-#define HEADING_MAX_RPM         (90.0f)
-#define HEADING_TOL_DEG         (3.0f) //容差
+#define HEADING_MAX_RPM         (150.0f)
+#define HEADING_TOL_DEG         (1.5f) //容差
 #define HEADING_RATE_TOL_DPS    (35.0f)
 #define HEADING_TIMEOUT_MS      (10000u) // 调试：先放宽到 10 s，确认是否超时
 #define HEADING_OUTPUT_SIGN     (-1.0f) //方向校准开关：先试 +1
@@ -28,5 +28,8 @@ heading_state_t heading_state(void);
 int16_t heading_target_deg(void);
 int16_t heading_left_rpm(void);
 int16_t heading_right_rpm(void);
+
+/* 运行时可调参数：0=KP 1=KD 2=MIN_RPM 3=MAX_RPM */
+extern float g_heading_params[4];
 
 #endif

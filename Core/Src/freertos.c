@@ -40,6 +40,8 @@
 
 uint8_t g_imu_status; 
 int16_t g_imu_gz = 0;      /* 陀螺 Z 轴原始值，给 OLED 显示 */
+volatile uint8_t g_car_stopped = 0;
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,6 +63,8 @@ int16_t g_imu_gz = 0;      /* 陀螺 Z 轴原始值，给 OLED 显示 */
 /* USER CODE BEGIN Variables */
 volatile uint32_t test_cnt= 0;
 uint8_t g_bt_rx_byte;
+static volatile uint8_t telem_tx_busy = 0;   /* 遥测中断发送占用标志 */
+static uint32_t telem_tx_t0 = 0;             /* 本次发送启动时刻 */
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -153,6 +157,11 @@ void StartDefaultTask(void *argument)
 
   uint32_t next = osKernelGetTickCount();
 
+  uint8_t stopped_cnt = 0;   /* 连续静止拍数 */
+
+  static char telem_buf[80];
+  static uint32_t telem_div = 0;
+
   for(;;)
   {
     pid_l.kp = g_params[0];
@@ -207,25 +216,46 @@ void StartDefaultTask(void *argument)
 
     float target_l, target_r;
     sync_correct(tl, tr, meas_l, meas_r, &target_l, &target_r);
+    
+    uint8_t stopped_now =
+    (target_l == 0.0f && target_r == 0.0f &&
+     meas_l > -2.0f && meas_l < 2.0f &&
+     meas_r > -2.0f && meas_r < 2.0f) ? 1u : 0u; //停止记一次标志
+    
+    if (stopped_now)
+    {
+      if (stopped_cnt < 10u) stopped_cnt++;
+    }
+    else
+    {
+      stopped_cnt = 0u;
+    }
+
+    g_car_stopped = (stopped_cnt >= 10u) ? 1u : 0u; //总200 ms判停
+
     float duty_l = pid_calc(&pid_l, target_l, meas_l);
     float duty_r = pid_calc(&pid_r, target_r, meas_r);
 
     
     motor_set((int16_t)duty_l, (int16_t)duty_r);
 
-    /* 遥测：5 Hz 发送。
-       telem_buf 必须是 static —— DMA 在本函数返回后还会继续读它，
-       放栈上会被下一轮循环覆盖成垃圾。                                          */
-    static char     telem_buf[80];
-    static uint32_t telem_div = 0;
+    /* 发送完成回调没回来时兜底：超过 200 ms 就中止，避免遥测永久卡死 */
+    if (telem_tx_busy &&
+        (uint32_t)(HAL_GetTick() - telem_tx_t0) > 200u)
+    {
+      HAL_UART_AbortTransmit(&huart3);
+      telem_tx_busy = 0;
+    }
 
+    /* 遥测：5 Hz 发送。*/
     if (++telem_div >= 10)          /* 20 ms × 10 = 200 ms，给 21 ms 的传输留足时间 */
     {
       telem_div = 0;
       int sign_code = ((HEADING_OUTPUT_SIGN > 0.0f) ? 2 : 0)
                     | ((IMU_YAW_SIGN          > 0.0f) ? 1 : 0);
-
-      int n = snprintf(telem_buf, sizeof(telem_buf), "%d %d %d %d %d %d %d %d %d %d\n",
+       if (!telem_tx_busy)
+        {
+        int n = snprintf(telem_buf, sizeof(telem_buf), "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
                        (int)(target_l * 10.0f),
                        (int)(target_r * 10.0f),
                        (int)(meas_l * 10.0f),
@@ -236,11 +266,13 @@ void StartDefaultTask(void *argument)
                        (int)heading_target_deg(), /* 航向目标角 */
                        (int)heading_state(),     /* 0=IDLE 1=TURN 2=HOLD 3=TIMEOUT */
                        sign_code);                /* bit1=OUTPUT正, bit0=IMU正 */
-
-      /* 用阻塞发送：5 Hz 下每 200 ms 才卡 21 ms，没必要上 DMA。
-         注意：本工程的 .ioc 里已经没有 USART3 的 DMA 配置，
-         调 HAL_UART_Transmit_DMA 会因 huart3.hdmatx == NULL 直接 HardFault。 */
-      HAL_UART_Transmit(&huart3, (uint8_t *)telem_buf, (uint16_t)n, 50);
+          telem_tx_busy = 1;
+          telem_tx_t0 = HAL_GetTick();
+          if (HAL_UART_Transmit_IT(&huart3, (uint8_t *)telem_buf, (uint16_t)n) != HAL_OK)
+          {
+            telem_tx_busy = 0;
+          }
+        }
     }
 
     next += 20;  
@@ -283,7 +315,7 @@ void StartTask02(void *argument)
     {
       uint16_t dt = (uint16_t)(now - s_imu_tick);
       s_imu_tick = now;
-      imu_update(dt);
+      imu_update(dt, g_car_stopped);
     }
     
     key_event_t e = key_scan();
@@ -311,6 +343,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     {
         bt_feed(g_bt_rx_byte, HAL_GetTick());
         HAL_UART_Receive_IT(&huart3, &g_bt_rx_byte, 1);
+    }
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART3)
+    {
+        telem_tx_busy = 0;
     }
 }
 /* USER CODE END Application */

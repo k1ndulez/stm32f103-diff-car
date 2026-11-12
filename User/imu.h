@@ -15,6 +15,9 @@
 
 #define IMU_GYRO_LSB_PER_DPS   131.07f    /*每一°/s对应131.07，角速度量程±250°/s */
 
+#define IMU_ZUPT_ALPHA       0.003f//一阶低通占比
+#define IMU_ZUPT_RATE_DPS    2.0f
+
 /* yaw 正方向校准：
    +1 = MPU 原始方向（Z 轴朝上时逆时针为正）
    -1 = 顺时针为正，和网页/车模的 0°→90° 约定一致
@@ -34,7 +37,7 @@ typedef struct {
 
 uint8_t imu_read(imu_raw_t *out);
 
-void    imu_update(uint16_t dt_ms);
+void imu_update(uint16_t dt_ms, uint8_t stationary);
 
 uint8_t imu_calibrate(void);              /* 静止校准零偏函数 */
 

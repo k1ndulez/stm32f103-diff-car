@@ -75,7 +75,7 @@ uint8_t imu_calibrate(void)
     return 0;
 }
 
-void imu_update(uint16_t dt_ms)//角速度换算角度
+void imu_update(uint16_t dt_ms, uint8_t stationary)//角速度换算角度
 {
     imu_raw_t r;
 
@@ -83,8 +83,14 @@ void imu_update(uint16_t dt_ms)//角速度换算角度
 
    float dps = ((r.gz - s_bias_gz) / IMU_GYRO_LSB_PER_DPS) * IMU_YAW_SIGN;
 
-    g_imu_yaw_dps = dps;
+    if (stationary && dps > -IMU_ZUPT_RATE_DPS && dps < IMU_ZUPT_RATE_DPS)
+    {
+    s_bias_gz += IMU_ZUPT_ALPHA * (r.gz - s_bias_gz);
+    g_imu_yaw_dps = 0.0f;
+    return;
+    }
 
+    g_imu_yaw_dps = dps;
     g_imu_yaw += dps * dt_ms/1000;//角速度积分
 
     if (g_imu_yaw >  180.0f) g_imu_yaw -= 360.0f;
